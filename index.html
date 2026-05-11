@@ -619,9 +619,12 @@ async function submitDiagnosis() {
   await saveToSupabase(scores, ranked, report);
 
   setTimeout(() => {
-    hide('loading-screen');
+    // 먼저 result-screen을 보이게 한 후 innerHTML 렌더링
+    const rs = document.getElementById('result-screen');
+    rs.classList.remove('hidden');
+    rs.style.display = 'block';
     renderResult(ranked[0], ranked[1], scores, ranked);
-    show('result-screen');
+    hide('loading-screen');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, 1500);
 }
@@ -684,6 +687,7 @@ function typeSection(type, label) {
 }
 
 function renderResult(top1, top2, scores, ranked) {
+  try {
   const t1 = TYPE_DATA[top1.type], t2 = TYPE_DATA[top2.type];
   const chips = ranked.map((r,i)=>
     `<span class="score-chip ${i===0?'top1':i===1?'top2':''}">${TYPE_DATA[r.type].emoji} ${TYPE_DATA[r.type].name} ${r.score}점</span>`
@@ -708,6 +712,10 @@ function renderResult(top1, top2, scores, ranked) {
 
     <div class="save-notice">✅ 진단 결과가 저장되었습니다</div>
     <button class="btn-restart" onclick="location.reload()">↺ 처음부터 다시 진단하기</button>`;
+  } catch(err) {
+    console.error("renderResult 오류:", err);
+    document.getElementById("result-screen").innerHTML = `<div class="card"><p style="color:var(--accent3)">오류: ${err.message}</p></div>`;
+  }
 }
 
 function buildReportText(t1, t2, scores) {
