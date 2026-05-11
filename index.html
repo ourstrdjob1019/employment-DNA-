@@ -271,6 +271,7 @@
       .likert-label { max-width: 100%; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="wrap">
@@ -389,13 +390,13 @@
   </div>
 
   <!-- ── Loading ── -->
-  <div id="loading-screen">
+  <div id="loading-screen" class="hidden">
     <div class="dna-spinner"></div>
     <p>DNA를 분석하고 있습니다...</p>
   </div>
 
   <!-- ── Result ── -->
-  <div id="result-screen"></div>
+  <div id="result-screen" class="hidden"></div>
 
 </div>
 
@@ -576,6 +577,9 @@ function goStep2() {
   if (!name || !sid || !dept || !grade) { showToast('모든 항목을 입력해주세요.', 'error'); return; }
   userInfo = { name, student_id: sid, department: dept, grade };
   hide('step1'); show('step2'); setStep(2);
+  // step2가 보인 후에 문항 빌드 (최초 1회만)
+  const wrap = document.getElementById('likert-questions');
+  if (wrap && wrap.children.length === 0) buildQuestions();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -711,42 +715,41 @@ function buildReportText(t1, t2, scores) {
 }
 
 /* ======================================================
-   Supabase 저장
+   Supabase 저장 (Supabase JS SDK 사용)
 ====================================================== */
 async function saveToSupabase(scores, ranked, reportText) {
-  const URL_  = window.__SUPABASE_URL__;
-  const ANON_ = window.__SUPABASE_ANON__;
-  if (!URL_ || URL_.includes('YOUR_SUPABASE')) return;
+  const SUPABASE_URL  = window.__SUPABASE_URL__;
+  const SUPABASE_ANON = window.__SUPABASE_ANON__;
+  if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_SUPABASE')) return;
 
   try {
-    await fetch(`${URL_}/rest/v1/job_dna_results`, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'apikey':        ANON_,
-        'Authorization': `Bearer ${ANON_}`,
-        'Prefer':        'return=minimal'
-      },
-      body: JSON.stringify({
-        name:         userInfo.name,
-        student_id:   userInfo.student_id,
-        department:   userInfo.department,
-        grade:        userInfo.grade,
-        type_1st:     ranked[0].type,
-        type_2nd:     ranked[1].type,
-        score_r:      scores.R,
-        score_i:      scores.I,
-        score_a:      scores.A,
-        score_s:      scores.S,
-        score_e:      scores.E,
-        score_c:      scores.C,
-        answers_json: JSON.stringify(answers),
-        binary_json:  JSON.stringify(binary),
-        report_text:  reportText,
-        created_at:   new Date().toISOString()
-      })
+    const { createClient } = window.supabase;
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const { error } = await client.from('job_dna_results').insert({
+      name:         userInfo.name,
+      student_id:   userInfo.student_id,
+      department:   userInfo.department,
+      grade:        userInfo.grade,
+      type_1st:     ranked[0].type,
+      type_2nd:     ranked[1].type,
+      score_r:      scores.R,
+      score_i:      scores.I,
+      score_a:      scores.A,
+      score_s:      scores.S,
+      score_e:      scores.E,
+      score_c:      scores.C,
+      answers_json: JSON.stringify(answers),
+      binary_json:  JSON.stringify(binary),
+      report_text:  reportText,
+      created_at:   new Date().toISOString()
     });
-    showToast('결과가 저장되었습니다 ✅', 'success');
+
+    if (error) {
+      console.warn('Supabase 저장 오류', JSON.stringify(error));
+    } else {
+      showToast('결과가 저장되었습니다 ✅', 'success');
+    }
   } catch(e) {
     console.warn('Supabase 저장 실패', e);
   }
@@ -755,8 +758,8 @@ async function saveToSupabase(scores, ranked, reportText) {
 /* ======================================================
    Utils
 ====================================================== */
-function show(id) { const el=document.getElementById(id); if(el) el.style.display='block'; }
-function hide(id) { const el=document.getElementById(id); if(el) el.style.display='none'; }
+function show(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
+function hide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
 function setStep(n) {
   [1,2,3].forEach(i=>{
     const dot=document.getElementById(`dot-${i}`), lbl=document.getElementById(`lbl-${i}`);
@@ -771,7 +774,6 @@ function showToast(msg, type='') {
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-buildQuestions();
 </script>
 
 <!-- =====================================================
@@ -780,7 +782,7 @@ buildQuestions();
      로컬 테스트 시 아래 값을 직접 입력하세요
 ===================================================== -->
 <script>
-  window.__SUPABASE_URL__  = "https://azdqhbyshxtfunurmyzz.supabase.co/rest/v1/";
+  window.__SUPABASE_URL__  = "https://azdqhbyshxtfunurmyzz.supabase.co";
   window.__SUPABASE_ANON__ = "sb_publishable_liVvvPhIaJTrGxu5DZjNoA_Rqbn-TqJ";
 </script>
 </body>
