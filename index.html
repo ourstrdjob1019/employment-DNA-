@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>취업 DNA 진단</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <script>
+    /* =====================================================
+       🖼️  유형별 이미지 URL — 이 6줄만 교체하세요
+    ===================================================== */
+    const TYPE_IMAGES = {
+      R: "현실형(R) 이미지 URL을 여기에 넣어주세요",
+      I: "탐구형(I) 이미지 URL을 여기에 넣어주세요",
+      A: "예술형(A) 이미지 URL을 여기에 넣어주세요",
+      S: "사회형(S) 이미지 URL을 여기에 넣어주세요",
+      E: "기업형(E) 이미지 URL을 여기에 넣어주세요",
+      C: "관습형(C) 이미지 URL을 여기에 넣어주세요",
+    };
+    /* ===================================================== */
+  </script>
+
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --surface: #13151c;
+      --card: #1a1d28;
+      --border: #2a2d3e;
+      --accent: #00f5a0;
+      --accent2: #00d4ff;
+      --accent3: #ff6b6b;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(0,245,160,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 80% 80%, rgba(0,212,255,.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 48px 20px 100px; }
+
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 56px; }
+    .logo-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000; font-family: 'Black Han Sans', sans-serif;
+      font-size: 11px; letter-spacing: 3px;
+      padding: 5px 16px; border-radius: 20px; margin-bottom: 20px;
+    }
+    header h1 {
+      font-family: 'Black Han Sans', sans-serif;
+      font-size: clamp(38px, 8vw, 68px);
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 55%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1.1; margin-bottom: 16px;
+    }
+    header p { color: var(--muted); font-size: 15px; line-height: 1.8; }
+
+    /* ── Steps ── */
+    .steps { display: flex; align-items: center; justify-content: center; margin-bottom: 48px; }
+    .step-item { display: flex; align-items: center; gap: 10px; }
+    .step-dot {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      border: 2px solid var(--border); color: var(--muted);
+      transition: all .3s;
+    }
+    .step-dot.active  { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 14px rgba(0,245,160,.3); }
+    .step-dot.done    { background: var(--accent); border-color: var(--accent); color: #000; }
+    .step-label       { font-size: 12px; color: var(--muted); transition: color .3s; }
+    .step-label.active { color: var(--accent); }
+    .step-line        { width: 40px; height: 1px; background: var(--border); margin: 0 10px; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 36px; margin-bottom: 24px;
+      animation: fadeUp .4s ease both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+    .section-label { font-size: 11px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; }
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 28px; }
+
+    /* ── Form ── */
+    .field { margin-bottom: 22px; }
+    .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .field input, .field select {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 15px;
+      padding: 14px 16px; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,245,160,.1);
+    }
+    .field select option { background: var(--surface); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ── Progress ── */
+    .progress-bar-wrap { margin-bottom: 28px; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width .4s ease; }
+
+    /* ── Likert ── */
+    .q-block { margin-bottom: 32px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+    .q-block:last-of-type { border-bottom: none; }
+    .q-num  { font-size: 11px; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+    .q-text { font-size: 15px; font-weight: 500; line-height: 1.6; margin-bottom: 16px; }
+    .q-reverse { display: inline-block; font-size: 11px; color: var(--accent3); background: rgba(255,107,107,.1); border-radius: 4px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+    .likert { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+    .likert-label { font-size: 11px; color: var(--muted); flex-shrink: 0; max-width: 70px; text-align: center; line-height: 1.3; }
+    .likert-options { display: flex; gap: 8px; }
+    .likert-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 2px solid var(--border); background: transparent;
+      color: var(--muted); font-weight: 700; font-size: 14px;
+      cursor: pointer; transition: all .2s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .likert-btn:hover { border-color: var(--accent); color: var(--text); }
+    .likert-btn.selected { background: var(--accent); border-color: var(--accent); color: #000; }
+
+    /* ── Binary choice ── */
+    .binary-choice { display: flex; flex-direction: column; gap: 12px; }
+    .choice-btn {
+      padding: 16px 20px; border-radius: 12px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text); font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px; text-align: left; cursor: pointer; transition: all .2s; line-height: 1.5;
+    }
+    .choice-btn:hover { border-color: var(--accent); background: rgba(0,245,160,.04); }
+    .choice-btn.selected { border-color: var(--accent); background: rgba(0,245,160,.1); color: var(--accent); }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 12px; justify-content: space-between; margin-top: 8px; align-items: center; }
+    .btn {
+      padding: 14px 28px; border-radius: 10px; border: none;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000;
+      box-shadow: 0 4px 20px rgba(0,245,160,.25);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,245,160,.35); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Loading ── */
+    #loading-screen { display: none; text-align: center; padding: 80px 20px; }
+    .dna-spinner {
+      width: 64px; height: 64px; margin: 0 auto 28px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-screen p { color: var(--muted); font-size: 15px; }
+
+    /* ── Result ── */
+    #result-screen { display: none; }
+
+    .result-top {
+      text-align: center; padding: 52px 36px;
+      background: linear-gradient(135deg, rgba(0,245,160,.07), rgba(0,212,255,.05));
+      border: 1px solid rgba(0,245,160,.2); border-radius: var(--radius);
+      margin-bottom: 24px; animation: fadeUp .5s ease both;
+    }
+    .result-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000; font-weight: 900; font-size: 11px; letter-spacing: 3px;
+      padding: 4px 16px; border-radius: 20px; margin-bottom: 24px;
+    }
+    .result-images { display: flex; gap: 32px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+    .result-img-wrap { text-align: center; }
+    .result-img {
+      width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+      border: 3px solid rgba(0,245,160,.35);
+      box-shadow: 0 0 40px rgba(0,245,160,.15);
+      display: block; margin: 0 auto 10px;
+    }
+    .result-img-placeholder {
+      width: 150px; height: 150px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0,245,160,.15), rgba(0,212,255,.1));
+      border: 3px solid rgba(0,245,160,.35);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px; font-size: 52px;
+    }
+    .result-img-rank { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+    .result-type-name {
+      font-family: 'Black Han Sans', sans-serif;
+      font-size: clamp(28px, 6vw, 46px);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 6px;
+    }
+    .result-type-sub { color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+    .score-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+    .score-chip {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    }
+    .score-chip.top1 { background: rgba(0,245,160,.12); border-color: rgba(0,245,160,.3); color: var(--accent); }
+    .score-chip.top2 { background: rgba(0,212,255,.1); border-color: rgba(0,212,255,.25); color: var(--accent2); }
+
+    /* ── Report cards ── */
+    .report-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 16px; animation: fadeUp .5s ease both; }
+    .report-card h3 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+    .report-card p { font-size: 15px; line-height: 1.9; color: var(--text); white-space: pre-line; }
+
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+    .tag-green { background: rgba(0,245,160,.12); color: var(--accent); border: 1px solid rgba(0,245,160,.25); }
+    .tag-blue  { background: rgba(0,212,255,.12); color: var(--accent2); border: 1px solid rgba(0,212,255,.25); }
+    .tag-red   { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.25); }
+
+    .person-block { display: flex; gap: 16px; align-items: flex-start; }
+    .person-icon  { font-size: 36px; flex-shrink: 0; }
+    .person-name  { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .person-role  { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+    .save-notice {
+      text-align: center; padding: 14px;
+      background: rgba(0,245,160,.06); border: 1px solid rgba(0,245,160,.15);
+      border-radius: 10px; margin-top: 8px; font-size: 13px; color: var(--accent);
+    }
+    .btn-restart {
+      display: block; width: 100%; padding: 16px; border-radius: 12px;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 14px; cursor: pointer;
+      margin-top: 12px; transition: all .2s;
+    }
+    .btn-restart:hover { border-color: var(--text); color: var(--text); }
+
+    .hidden { display: none !important; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 20px; font-size: 14px; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      transform: translateY(80px); opacity: 0; transition: all .3s;
+    }
+    .toast.show    { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(0,245,160,.4); }
+    .toast.error   { border-color: rgba(255,107,107,.4); }
+
+    @media (max-width: 600px) {
+      .card { padding: 24px 18px; }
+      .two-col { grid-template-columns: 1fr; }
+      .likert { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .likert-label { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo-badge">CAREER DNA</div>
+    <h1>취업 DNA 진단</h1>
+    <p>Holland 직업흥미 이론을 기반으로<br>나만의 커리어 유형을 발견하세요</p>
+  </header>
+
+  <!-- ── Step Indicator ── -->
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-dot active" id="dot-1">1</div>
+      <span class="step-label active" id="lbl-1">기본 정보</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-dot" id="dot-2">2</div>
+      <span class="step-label" id="lbl-2">성향 진단</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-dot" id="dot-3">3</div>
+      <span class="step-label" id="lbl-3">결과 리포트</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════
+       STEP 1 : 기본 정보
+  ══════════════════════════ -->
+  <div id="step1">
+    <div class="card">
+      <div class="section-label">STEP 01</div>
+      <div class="section-title">기본 정보를 입력해주세요</div>
+
+      <div class="two-col">
+        <div class="field"><label>이름 *</label><input type="text" id="f-name" placeholder="홍길동" /></div>
+        <div class="field"><label>학번 *</label><input type="text" id="f-sid" placeholder="2024XXXXXX" /></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>학과 *</label><input type="text" id="f-dept" placeholder="경영학과" /></div>
+        <div class="field">
+          <label>학년 *</label>
+          <select id="f-grade">
+            <option value="">선택</option>
+            <option>1학년</option><option>2학년</option><option>3학년</option><option>4학년</option><option>졸업생</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row" style="justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="goStep2()">다음 단계 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════
+       STEP 2 : 성향 진단
+  ══════════════════════════ -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <div class="section-label">STEP 02</div>
+      <div class="section-title">33가지 문항에 답해주세요</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">각 문항에 대해 자신과 얼마나 일치하는지 1(전혀 아님)~5(매우 그렇다)로 선택해주세요.</p>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-info">
+          <span id="prog-text">0 / 33 완료</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+
+      <!-- Q1~Q30 리커트 -->
+      <div id="likert-questions"></div>
+
+      <!-- Q31~Q33 양자택일 -->
+      <div style="margin-top:8px;">
+        <div class="section-label" style="margin-bottom:16px;">BONUS · 선택형 문항</div>
+
+        <div class="q-block">
+          <div class="q-num">Q31</div>
+          <div class="q-text">다음 중 자신과 더 가까운 행동을 고르시오.</div>
+          <div class="binary-choice">
+            <button class="choice-btn" onclick="selectBinary('b31',this,'R')" data-group="b31">① 고민하기보다 일단 행동하는 편이다</button>
+            <button class="choice-btn" onclick="selectBinary('b31',this,'I')" data-group="b31">② 충분히 분석한 후에 행동하는 편이다</button>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-num">Q32</div>
+          <div class="q-text">다음 중 더 선호하는 방식은 무엇인가?</div>
+          <div class="binary-choice">
+            <button class="choice-btn" onclick="selectBinary('b32',this,'A')" data-group="b32">① 새로운 아이디어를 만들어내는 것이 좋다</button>
+            <button class="choice-btn" onclick="selectBinary('b32',this,'C')" data-group="b32">② 정해진 기준과 방식대로 수행하는 것이 좋다</button>
+          </div>
+        </div>
+
+        <div class="q-block" style="border-bottom:none;">
+          <div class="q-num">Q33</div>
+          <div class="q-text">다음 중 더 중요하게 생각하는 것은 무엇인가?</div>
+          <div class="binary-choice">
+            <button class="choice-btn" onclick="selectBinary('b33',this,'S')" data-group="b33">① 사람과의 관계와 소통이 중요하다</button>
+            <button class="choice-btn" onclick="selectBinary('b33',this,'E')" data-group="b33">② 목표를 달성하고 성과를 내는 것이 중요하다</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep1()">← 이전</button>
+        <button class="btn btn-primary" onclick="submitDiagnosis()">결과 보기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Loading ── -->
+  <div id="loading-screen">
+    <div class="dna-spinner"></div>
+    <p>DNA를 분석하고 있습니다...</p>
+  </div>
+
+  <!-- ── Result ── -->
+  <div id="result-screen"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================
+   문항 데이터
+====================================================== */
+const QUESTIONS = [
+  { id:1,  type:'R', reverse:false, text:'나는 생각보다 행동이 먼저 나오는 편이다' },
+  { id:2,  type:'R', reverse:false, text:'직접 해보면서 배우는 것이 좋다' },
+  { id:3,  type:'R', reverse:false, text:'눈에 보이는 결과가 있어야 만족스럽다' },
+  { id:4,  type:'R', reverse:true,  text:'나는 일을 시작하기 전에 오래 고민하는 편이다' },
+  { id:5,  type:'R', reverse:false, text:'몸을 움직이거나 현장에서 하는 일이 잘 맞는다' },
+  { id:6,  type:'I', reverse:false, text:'나는 어떤 일이든 이유를 끝까지 알고 싶다' },
+  { id:7,  type:'I', reverse:false, text:'문제를 분석하고 해결하는 과정이 재미있다' },
+  { id:8,  type:'I', reverse:false, text:'새로운 정보를 깊게 파고드는 편이다' },
+  { id:9,  type:'I', reverse:true,  text:'나는 감각보다 직관으로 판단하는 편이다' },
+  { id:10, type:'I', reverse:false, text:'논리적으로 맞지 않으면 쉽게 납득하지 않는다' },
+  { id:11, type:'A', reverse:false, text:'나는 틀에 얽매이지 않는 것이 중요하다' },
+  { id:12, type:'A', reverse:false, text:'나만의 아이디어를 떠올리는 것을 즐긴다' },
+  { id:13, type:'A', reverse:false, text:'감정이나 생각을 표현하는 활동이 좋다' },
+  { id:14, type:'A', reverse:true,  text:'정해진 방식대로 하는 것이 편하다' },
+  { id:15, type:'A', reverse:false, text:'결과보다 과정이나 느낌이 더 중요하다' },
+  { id:16, type:'S', reverse:false, text:'나는 사람들과 함께할 때 더 에너지가 난다' },
+  { id:17, type:'S', reverse:false, text:'다른 사람을 도와줄 때 보람을 느낀다' },
+  { id:18, type:'S', reverse:false, text:'주변 사람들이 고민을 자주 털어놓는다' },
+  { id:19, type:'S', reverse:true,  text:'나는 혼자 일하는 것이 더 편하다' },
+  { id:20, type:'S', reverse:false, text:'협력하는 환경에서 더 잘한다' },
+  { id:21, type:'E', reverse:false, text:'나는 목표를 세우면 꼭 이루려고 한다' },
+  { id:22, type:'E', reverse:false, text:'사람들을 설득하거나 이끄는 것이 어렵지 않다' },
+  { id:23, type:'E', reverse:false, text:'경쟁 상황이 오히려 동기부여가 된다' },
+  { id:24, type:'E', reverse:true,  text:'나는 다른 사람의 의견을 따르는 것이 편하다' },
+  { id:25, type:'E', reverse:false, text:'내가 중심이 되어 진행하는 것이 좋다' },
+  { id:26, type:'C', reverse:false, text:'나는 계획 없이 진행되면 불안하다' },
+  { id:27, type:'C', reverse:false, text:'정리정돈이 잘 되어 있어야 집중된다' },
+  { id:28, type:'C', reverse:false, text:'규칙과 기준이 명확한 것이 좋다' },
+  { id:29, type:'C', reverse:true,  text:'나는 즉흥적으로 움직이는 것이 더 좋다' },
+  { id:30, type:'C', reverse:false, text:'반복적이고 체계적인 일이 편하다' },
+];
+
+/* ======================================================
+   유형 콘텐츠
+====================================================== */
+const TYPE_DATA = {
+  R: {
+    name:'현실형', eng:'Realistic', emoji:'🔧',
+    desc:'직접 실행하고 결과를 만들어내는 데 강점을 가진 유형입니다. 눈에 보이는 성과를 중요하게 생각하며, 현장 중심의 업무에서 높은 몰입도를 보입니다.',
+    features:['실제 경험을 통해 배우는 것을 선호합니다','도구·시스템·장비 등을 다루는 활동에 익숙합니다','문제를 빠르게 해결하고 결과로 확인하려는 경향이 있습니다'],
+    strengths:['실행력과 빠른 적응력','현실적인 문제 해결 능력'],
+    weaknesses:['계획 없이 바로 실행하는 경향','장기적 관점 부족'],
+    growth:['실행 후 기록 및 복기 습관화','체계적인 업무 계획 수립'],
+    person:{ name:'정주영', role:'현대그룹 창업자', emoji:'👷',
+      story:'"해봤어?"라는 말처럼 고민보다 실행을 먼저 선택했던 인물입니다. 아무도 불가능하다고 생각했던 조선소 건설도 직접 추진하며 현실로 만들어냈습니다.\n완벽한 조건을 기다리기보다, 일단 시작하고 부딪히며 해결하는 방식으로 성과를 만들어냈습니다.' },
+    keywords:['✔ 실행을 두려워하지 않고','✔ 직접 경험하며 배우고','✔ 결과를 현실로 만들어내는 과정에서 강점을 발휘합니다']
+  },
+  I: {
+    name:'탐구형', eng:'Investigative', emoji:'🧠',
+    desc:'논리적 사고와 분석을 통해 문제의 본질을 파악하는 유형입니다. 복잡한 문제를 구조적으로 이해하고 해결하는 데 강점을 보입니다.',
+    features:['원인과 구조를 분석하는 것을 선호합니다','데이터와 근거를 기반으로 판단합니다','혼자 깊이 몰입하는 시간을 중요하게 생각합니다'],
+    strengths:['분석력과 문제 해결 능력','논리적 사고'],
+    weaknesses:['과도한 고민으로 실행 지연','현실 적용 부족'],
+    growth:['작은 실행을 통해 검증 경험 쌓기','협업을 통한 관점 확장'],
+    person:{ name:'김상욱', role:'물리학자·교수', emoji:'🔬',
+      story:'어려운 과학 개념을 단순히 암기하는 것이 아니라, "왜 그런 현상이 일어나는가"를 논리적으로 설명하는 것으로 잘 알려져 있습니다. 복잡한 이론도 구조적으로 분석하고, 사람들이 쉽게 이해할 수 있도록 풀어내는 능력이 뛰어납니다.' },
+    keywords:['✔ 문제의 본질을 분석하고','✔ 논리적으로 사고하며','✔ 새로운 이해와 해결 방식을 찾아가는 과정에서 강점을 발휘합니다']
+  },
+  A: {
+    name:'예술형', eng:'Artistic', emoji:'🎨',
+    desc:'자유로운 사고와 감각적인 표현을 통해 새로운 가치를 만들어내는 유형입니다. 틀에 얽매이지 않고 창의적인 결과를 도출합니다.',
+    features:['기존 방식보다 새로운 접근을 선호합니다','감각적이고 표현적인 활동에 강점을 보입니다','아이디어를 떠올리는 과정 자체를 즐깁니다'],
+    strengths:['창의력과 표현력','아이디어 발상 능력'],
+    weaknesses:['마무리 부족','실행력 부족'],
+    growth:['아이디어를 결과물로 연결하는 연습','구조화 능력 강화'],
+    person:{ name:'봉준호', role:'영화감독', emoji:'🎬',
+      story:'기존의 틀에 얽매이지 않는 독창적인 연출과 시각으로 세계적인 작품을 만들어낸 인물입니다. 영화 《기생충》 역시 사회적 메시지와 감각적인 표현 방식을 결합하여 새로운 경험을 만들어냈습니다.' },
+    keywords:['✔ 새로운 시각으로 세상을 바라보고','✔ 자신만의 방식으로 표현하며','✔ 창의적인 결과물을 만들어내는 과정에서 강점을 발휘합니다']
+  },
+  S: {
+    name:'사회형', eng:'Social', emoji:'🤝',
+    desc:'사람과의 관계 속에서 가치를 만들어내는 유형입니다. 타인의 감정을 이해하고 협력을 통해 긍정적인 변화를 이끌어냅니다.',
+    features:['사람들과의 소통에서 에너지를 얻습니다','타인의 문제 해결에 관심이 많습니다','협력적인 환경에서 강점을 발휘합니다'],
+    strengths:['공감 능력과 소통 능력','협업 및 관계 형성'],
+    weaknesses:['감정 소모','자기 의견 표현 부족'],
+    growth:['자신의 기준과 경계 설정','리더십 경험 확장'],
+    person:{ name:'유재석', role:'방송인', emoji:'🎤',
+      story:'다양한 사람들과의 관계 속에서 분위기를 자연스럽게 이끌어가는 인물입니다. 상대방을 배려하면서도 편안한 소통을 만들어내며, 팀 전체의 흐름을 조율하는 데 강점을 보입니다.' },
+    keywords:['✔ 사람을 이해하고','✔ 관계를 연결하며','✔ 함께 성장하는 환경을 만들어내는 과정에서 강점을 발휘합니다']
+  },
+  E: {
+    name:'기업형', eng:'Enterprising', emoji:'🚀',
+    desc:'목표를 설정하고 사람과 자원을 활용해 성과를 만들어내는 유형입니다. 조직 안에서 방향을 제시하고 결과를 이끄는 데 강점을 보입니다.',
+    features:['목표 달성을 중심으로 사고합니다','사람들을 설득하고 협력을 이끌어냅니다','빠르게 판단하고 실행하는 편입니다'],
+    strengths:['리더십과 추진력','설득력 및 실행 중심 사고'],
+    weaknesses:['성과 중심 사고로 과정 소홀 가능성','타인의 의견을 충분히 반영하지 못할 수 있음'],
+    growth:['경청과 피드백 수용 능력 강화','장기적인 전략 수립 연습'],
+    person:{ name:'손정의', role:'소프트뱅크 회장', emoji:'💼',
+      story:'미래 산업의 흐름을 빠르게 읽고, 사람과 자본을 연결해 새로운 기회를 만들어낸 인물입니다. 방향을 정하고 실제 성과로 연결하는 추진력이 뛰어납니다.' },
+    keywords:['✔ 목표를 설정하고','✔ 사람과 자원을 움직이며','✔ 결과를 만들어내는 과정에서 강점을 발휘합니다']
+  },
+  C: {
+    name:'관습형', eng:'Conventional', emoji:'📊',
+    desc:'체계와 질서를 기반으로 안정적인 결과를 만들어내는 유형입니다. 정확성과 효율성을 중시하며 조직을 안정적으로 운영합니다.',
+    features:['계획과 규칙을 중요하게 생각합니다','정리와 관리에 능숙합니다','반복적이고 체계적인 업무에서 강점을 보입니다'],
+    strengths:['꼼꼼함과 정확성','계획 및 관리 능력'],
+    weaknesses:['변화에 대한 부담','유연성 부족'],
+    growth:['새로운 환경에 대한 적응력 강화','창의적 사고 확장'],
+    person:{ name:'워런 버핏', role:'투자자', emoji:'📈',
+      story:'철저한 원칙과 기준을 바탕으로 안정적인 성과를 만들어낸 인물입니다. 감정이 아닌 데이터와 기준에 따라 판단하며, 장기적인 관점에서 꾸준한 성장을 이어왔습니다.' },
+    keywords:['✔ 기준과 원칙을 중요하게 생각하고','✔ 체계적으로 업무를 관리하며','✔ 안정적인 결과를 만들어내는 과정에서 강점을 발휘합니다']
+  }
+};
+
+/* ======================================================
+   State
+====================================================== */
+const answers = {};
+const binary  = {};
+let   userInfo = {};
+
+/* ======================================================
+   Build Q1~Q30
+====================================================== */
+function buildQuestions() {
+  const wrap = document.getElementById('likert-questions');
+  QUESTIONS.forEach(q => {
+    const d = document.createElement('div');
+    d.className = 'q-block';
+    d.innerHTML = `
+      <div class="q-num">Q${q.id} · ${TYPE_DATA[q.type].name}${q.reverse ? ' <span class="q-reverse">역문항</span>' : ''}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="likert">
+        <div class="likert-label">전혀<br>아님</div>
+        <div class="likert-options" id="lk-${q.id}">
+          ${[1,2,3,4,5].map(v=>`<button class="likert-btn" onclick="selectLikert(${q.id},${v},this)">${v}</button>`).join('')}
+        </div>
+        <div class="likert-label">매우<br>그렇다</div>
+      </div>`;
+    wrap.appendChild(d);
+  });
+}
+
+function selectLikert(qId, val, btn) {
+  document.querySelectorAll(`#lk-${qId} .likert-btn`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  answers[qId] = val;
+  updateProgress();
+}
+
+function selectBinary(group, btn, type) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  binary[group] = type;
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = Object.keys(answers).length + Object.keys(binary).length;
+  const pct  = Math.round(done / 33 * 100);
+  document.getElementById('prog-text').textContent = `${done} / 33 완료`;
+  document.getElementById('prog-pct').textContent  = `${pct}%`;
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+
+/* ======================================================
+   Navigation
+====================================================== */
+function goStep1() {
+  show('step1'); hide('step2'); hide('loading-screen'); hide('result-screen');
+  setStep(1);
+}
+function goStep2() {
+  const name  = document.getElementById('f-name').value.trim();
+  const sid   = document.getElementById('f-sid').value.trim();
+  const dept  = document.getElementById('f-dept').value.trim();
+  const grade = document.getElementById('f-grade').value;
+  if (!name || !sid || !dept || !grade) { showToast('모든 항목을 입력해주세요.', 'error'); return; }
+  userInfo = { name, student_id: sid, department: dept, grade };
+  hide('step1'); show('step2'); setStep(2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ======================================================
+   Scoring
+====================================================== */
+function calcScores() {
+  const s = { R:0, I:0, A:0, S:0, E:0, C:0 };
+  QUESTIONS.forEach(q => {
+    const raw   = answers[q.id] ?? 3;
+    s[q.type]  += q.reverse ? (6 - raw) : raw;
+  });
+  if (binary.b31) s[binary.b31] += 2;
+  if (binary.b32) s[binary.b32] += 2;
+  if (binary.b33) s[binary.b33] += 2;
+  return s;
+}
+
+function getRanked(scores) {
+  return Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([type,score])=>({type,score}));
+}
+
+/* ======================================================
+   Submit
+====================================================== */
+async function submitDiagnosis() {
+  const done = Object.keys(answers).length + Object.keys(binary).length;
+  if (done < 33) { showToast(`아직 ${33 - done}개 문항이 남았습니다.`, 'error'); return; }
+
+  hide('step2'); show('loading-screen'); setStep(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const scores  = calcScores();
+  const ranked  = getRanked(scores);
+  const report  = buildReportText(ranked[0].type, ranked[1].type, scores);
+
+  await saveToSupabase(scores, ranked, report);
+
+  setTimeout(() => {
+    hide('loading-screen');
+    renderResult(ranked[0], ranked[1], scores, ranked);
+    show('result-screen');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1500);
+}
+
+/* ======================================================
+   Render Result
+====================================================== */
+function imgBlock(type, rank) {
+  const url = TYPE_IMAGES[type];
+  const real = url && !url.includes('URL을 여기에');
+  return `
+    <div class="result-img-wrap">
+      ${real
+        ? `<img src="${url}" alt="${TYPE_DATA[type].name}" class="result-img" />`
+        : `<div class="result-img-placeholder">${TYPE_DATA[type].emoji}</div>`}
+      <div class="result-img-rank">${rank===1?'🥇 1순위':'🥈 2순위'} · ${TYPE_DATA[type].name}</div>
+    </div>`;
+}
+
+function typeSection(type, label) {
+  const t = TYPE_DATA[type];
+  return `
+    <div class="report-card">
+      <h3>${label} · ${t.emoji} ${t.name} (${t.eng})</h3>
+      <p style="margin-bottom:16px;">${t.desc}</p>
+
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">주요 특징</p>
+      <div class="tag-list" style="margin-bottom:18px;">
+        ${t.features.map(f=>`<span class="tag tag-blue">${f}</span>`).join('')}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">강점</p>
+          <div class="tag-list">${t.strengths.map(s=>`<span class="tag tag-green">${s}</span>`).join('')}</div>
+        </div>
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">보완할 점</p>
+          <div class="tag-list">${t.weaknesses.map(w=>`<span class="tag tag-red">${w}</span>`).join('')}</div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">성장 방향</p>
+      <div class="tag-list" style="margin-bottom:20px;">
+        ${t.growth.map(g=>`<span class="tag tag-blue">${g}</span>`).join('')}
+      </div>
+
+      <div class="person-block">
+        <div class="person-icon">${t.person.emoji}</div>
+        <div>
+          <div class="person-name">${t.person.name}</div>
+          <div class="person-role">${t.person.role}</div>
+          <p style="font-size:14px;line-height:1.8;">${t.person.story}</p>
+          <div class="tag-list" style="margin-top:12px;">
+            ${t.keywords.map(k=>`<span class="tag tag-green">${k}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderResult(top1, top2, scores, ranked) {
+  const t1 = TYPE_DATA[top1.type], t2 = TYPE_DATA[top2.type];
+  const chips = ranked.map((r,i)=>
+    `<span class="score-chip ${i===0?'top1':i===1?'top2':''}">${TYPE_DATA[r.type].emoji} ${TYPE_DATA[r.type].name} ${r.score}점</span>`
+  ).join('');
+
+  document.getElementById('result-screen').innerHTML = `
+    <div class="result-top">
+      <div class="result-badge">YOUR CAREER DNA</div>
+      <div class="result-images">${imgBlock(top1.type,1)}${imgBlock(top2.type,2)}</div>
+      <div class="result-type-name">${t1.name} + ${t2.name}</div>
+      <div class="result-type-sub">${t1.eng} · ${t2.eng}</div>
+      <div class="score-row">${chips}</div>
+    </div>
+
+    ${typeSection(top1.type, '1순위 주요 유형')}
+    ${typeSection(top2.type, '2순위 보완 유형')}
+
+    <div class="report-card">
+      <h3>복합 유형 특징</h3>
+      <p>${t1.name}의 ${t1.strengths[0]}과 ${t2.name}의 ${t2.strengths[0]}을 함께 갖추고 있습니다.\n두 유형의 강점을 조합하면 실제 현장에서 폭넓게 활약할 수 있는 인재로 성장할 수 있습니다.</p>
+    </div>
+
+    <div class="save-notice">✅ 진단 결과가 저장되었습니다</div>
+    <button class="btn-restart" onclick="location.reload()">↺ 처음부터 다시 진단하기</button>`;
+}
+
+function buildReportText(t1, t2, scores) {
+  return `[취업 DNA 진단 결과]\n1순위: ${TYPE_DATA[t1].name}(${t1}) ${scores[t1]}점\n2순위: ${TYPE_DATA[t2].name}(${t2}) ${scores[t2]}점\n\n${TYPE_DATA[t1].desc}\n\n${TYPE_DATA[t2].desc}`;
+}
+
+/* ======================================================
+   Supabase 저장
+====================================================== */
+async function saveToSupabase(scores, ranked, reportText) {
+  const URL_  = window.__SUPABASE_URL__;
+  const ANON_ = window.__SUPABASE_ANON__;
+  if (!URL_ || URL_.includes('YOUR_SUPABASE')) return;
+
+  try {
+    await fetch(`${URL_}/rest/v1/job_dna_results`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        ANON_,
+        'Authorization': `Bearer ${ANON_}`,
+        'Prefer':        'return=minimal'
+      },
+      body: JSON.stringify({
+        name:         userInfo.name,
+        student_id:   userInfo.student_id,
+        department:   userInfo.department,
+        grade:        userInfo.grade,
+        type_1st:     ranked[0].type,
+        type_2nd:     ranked[1].type,
+        score_r:      scores.R,
+        score_i:      scores.I,
+        score_a:      scores.A,
+        score_s:      scores.S,
+        score_e:      scores.E,
+        score_c:      scores.C,
+        answers_json: JSON.stringify(answers),
+        binary_json:  JSON.stringify(binary),
+        report_text:  reportText,
+        created_at:   new Date().toISOString()
+      })
+    });
+    showToast('결과가 저장되었습니다 ✅', 'success');
+  } catch(e) {
+    console.warn('Supabase 저장 실패', e);
+  }
+}
+
+/* ======================================================
+   Utils
+====================================================== */
+function show(id) { const el=document.getElementById(id); if(el) el.style.display='block'; }
+function hide(id) { const el=document.getElementById(id); if(el) el.style.display='none'; }
+function setStep(n) {
+  [1,2,3].forEach(i=>{
+    const dot=document.getElementById(`dot-${i}`), lbl=document.getElementById(`lbl-${i}`);
+    dot.classList.remove('active','done'); lbl.classList.remove('active');
+    if(i<n) dot.classList.add('done');
+    if(i===n){ dot.classList.add('active'); lbl.classList.add('active'); }
+  });
+}
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+buildQuestions();
+</script>
+
+<!-- =====================================================
+     🔑 Supabase 환경변수
+     Vercel 환경변수: SUPABASE_URL, SUPABASE_ANON_KEY
+     로컬 테스트 시 아래 값을 직접 입력하세요
+===================================================== -->
+<script>
+  window.__SUPABASE_URL__  = "https://azdqhbyshxtfunurmyzz.supabase.co/rest/v1/";
+  window.__SUPABASE_ANON__ = "sb_publishable_liVvvPhIaJTrGxu5DZjNoA_Rqbn-TqJ";
+</script>
+</body>
+</html>
