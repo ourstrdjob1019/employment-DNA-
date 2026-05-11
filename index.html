@@ -178,10 +178,11 @@
     #result-screen { display: none; }
 
     .result-top {
-      text-align: center; padding: 52px 36px;
+      text-align: center; padding: 52px 24px;
       background: linear-gradient(135deg, rgba(0,245,160,.07), rgba(0,212,255,.05));
       border: 1px solid rgba(0,245,160,.2); border-radius: var(--radius);
       margin-bottom: 24px; animation: fadeUp .5s ease both;
+      overflow: visible; box-sizing: border-box;
     }
     .result-badge {
       display: inline-block;
@@ -189,8 +190,8 @@
       color: #000; font-weight: 900; font-size: 11px; letter-spacing: 3px;
       padding: 4px 16px; border-radius: 20px; margin-bottom: 24px;
     }
-    .result-images { display: flex; gap: 32px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
-    .result-img-wrap { text-align: center; flex-shrink: 0; }
+    .result-images { display: flex; gap: 32px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; overflow: visible; box-sizing: border-box; }
+    .result-img-wrap { text-align: center; flex-shrink: 0; min-width: 0; }
     .result-img {
       width: 200px; height: 200px; border-radius: 16px;
       object-fit: cover; object-position: center center;
@@ -289,6 +290,9 @@
       .two-col { grid-template-columns: 1fr; }
       .likert { flex-direction: column; align-items: flex-start; gap: 12px; }
       .likert-label { max-width: 100%; }
+      .result-images { gap: 16px; }
+      .result-images > .result-img-wrap > div { width: 140px !important; height: 140px !important; }
+      .result-images > .result-img-wrap > div img { width: 140px !important; height: 140px !important; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -659,7 +663,7 @@ function imgBlock(type, rank) {
   return `
     <div class="result-img-wrap">
       ${real
-        ? `<div style="width:200px;height:200px;border-radius:16px;overflow:hidden;border:3px solid rgba(0,245,160,.35);box-shadow:0 0 40px rgba(0,245,160,.15);margin:0 auto 10px;">
+        ? `<div style="width:200px;height:200px;border-radius:16px;overflow:hidden;border:3px solid rgba(0,245,160,.35);box-shadow:0 0 40px rgba(0,245,160,.15);margin:0 auto 10px;flex-shrink:0;box-sizing:border-box;">
              <img src="${url}" alt="${TYPE_DATA[type].name}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" />
            </div>`
         : `<div class="result-img-placeholder">${TYPE_DATA[type].emoji}</div>`}
