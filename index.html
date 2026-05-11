@@ -192,13 +192,13 @@
     .result-images { display: flex; gap: 32px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
     .result-img-wrap { text-align: center; }
     .result-img {
-      width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
+      width: 200px; height: 200px; border-radius: 16px; object-fit: cover;
       border: 3px solid rgba(0,245,160,.35);
       box-shadow: 0 0 40px rgba(0,245,160,.15);
       display: block; margin: 0 auto 10px;
     }
     .result-img-placeholder {
-      width: 200px; height: 200px; border-radius: 50%;
+      width: 200px; height: 200px; border-radius: 16px;
       background: linear-gradient(135deg, rgba(0,245,160,.15), rgba(0,212,255,.1));
       border: 3px solid rgba(0,245,160,.35);
       display: flex; align-items: center; justify-content: center;
@@ -747,6 +747,22 @@ function renderResult(top1, top2, scores, ranked) {
   }
 }
 
+// 외부 이미지를 base64로 변환 (CORS 우회)
+async function toBase64(url) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch(e) {
+    return url; // 실패 시 원본 URL 유지
+  }
+}
+
 async function saveAsImage() {
   const btn = document.getElementById('btn-save-img');
   btn.disabled = true;
@@ -754,17 +770,41 @@ async function saveAsImage() {
 
   try {
     const el = document.getElementById('capture-area');
+
+    // 모든 img 태그를 base64로 교체 후 캡처
+    const imgs = el.querySelectorAll('img');
+    const origSrcs = [];
+    for (const img of imgs) {
+      origSrcs.push(img.src);
+      const b64 = await toBase64(img.src);
+      img.src = b64;
+    }
+
+    // 폰트 로드 대기
+    await document.fonts.ready;
+
+    const scale = Math.max(window.devicePixelRatio * 2, 3);
     const canvas = await html2canvas(el, {
       backgroundColor: '#0b0c10',
-      scale: 2,
-      useCORS: true,
+      scale: scale,
+      useCORS: false,
       allowTaint: false,
       logging: false,
+      imageTimeout: 0,
+      removeContainer: true,
+      onclone: (doc) => {
+        // 클론 문서에서 hidden 요소 정리
+        doc.querySelectorAll('.hidden').forEach(e => e.style.display = 'none');
+      }
     });
 
+    // 원본 src 복원
+    imgs.forEach((img, i) => { img.src = origSrcs[i]; });
+
+    const dateStr = new Date().toLocaleDateString('ko-KR', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\. /g,'-').replace('.','');
     const link = document.createElement('a');
-    link.download = `취업DNA_${userInfo.name}_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.download = `취업DNA_${userInfo.name}_${dateStr}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
     link.click();
 
     btn.innerHTML = '<span>✅</span> 저장 완료!';
@@ -776,7 +816,7 @@ async function saveAsImage() {
     console.error('이미지 저장 실패', e);
     btn.disabled = false;
     btn.innerHTML = '<span>📥</span> 결과 이미지로 저장하기';
-    showToast('이미지 저장에 실패했습니다.', 'error');
+    showToast('이미지 저장에 실패했습니다: ' + e.message, 'error');
   }
 }
 
