@@ -192,17 +192,17 @@
     .result-images { display: flex; gap: 32px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
     .result-img-wrap { text-align: center; }
     .result-img {
-      width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+      width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
       border: 3px solid rgba(0,245,160,.35);
       box-shadow: 0 0 40px rgba(0,245,160,.15);
       display: block; margin: 0 auto 10px;
     }
     .result-img-placeholder {
-      width: 150px; height: 150px; border-radius: 50%;
+      width: 200px; height: 200px; border-radius: 50%;
       background: linear-gradient(135deg, rgba(0,245,160,.15), rgba(0,212,255,.1));
       border: 3px solid rgba(0,245,160,.35);
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 10px; font-size: 52px;
+      margin: 0 auto 10px; font-size: 68px;
     }
     .result-img-rank { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
     .result-type-name {
@@ -242,6 +242,24 @@
       background: rgba(0,245,160,.06); border: 1px solid rgba(0,245,160,.15);
       border-radius: 10px; margin-top: 8px; font-size: 13px; color: var(--accent);
     }
+    .btn-save-img {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 18px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000; font-family: 'Noto Sans KR', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      margin-top: 16px; transition: all .2s;
+      box-shadow: 0 4px 20px rgba(0,245,160,.25);
+    }
+    .btn-save-img:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,245,160,.35); }
+    .btn-save-img:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    /* 캡처용 카드 wrapper */
+    #capture-area {
+      background: var(--bg);
+      padding: 32px 24px;
+      border-radius: var(--radius);
+    }
     .btn-restart {
       display: block; width: 100%; padding: 16px; border-radius: 12px;
       border: 1px solid var(--border); background: transparent; color: var(--muted);
@@ -272,6 +290,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -694,27 +713,70 @@ function renderResult(top1, top2, scores, ranked) {
   ).join('');
 
   document.getElementById('result-screen').innerHTML = `
-    <div class="result-top">
-      <div class="result-badge">YOUR CAREER DNA</div>
-      <div class="result-images">${imgBlock(top1.type,1)}${imgBlock(top2.type,2)}</div>
-      <div class="result-type-name">${t1.name} + ${t2.name}</div>
-      <div class="result-type-sub">${t1.eng} · ${t2.eng}</div>
-      <div class="score-row">${chips}</div>
-    </div>
+    <div id="capture-area">
+      <div style="text-align:center; padding: 8px 0 24px;">
+        <div class="logo-badge">CAREER DNA</div>
+        <div style="font-size:13px; color:var(--muted); margin-top:8px;">${userInfo.name} · ${userInfo.department} ${userInfo.grade}</div>
+      </div>
 
-    ${typeSection(top1.type, '1순위 주요 유형')}
-    ${typeSection(top2.type, '2순위 보완 유형')}
+      <div class="result-top">
+        <div class="result-badge">YOUR CAREER DNA</div>
+        <div class="result-images">${imgBlock(top1.type,1)}${imgBlock(top2.type,2)}</div>
+        <div class="result-type-name">${t1.name} + ${t2.name}</div>
+        <div class="result-type-sub">${t1.eng} · ${t2.eng}</div>
+        <div class="score-row">${chips}</div>
+      </div>
 
-    <div class="report-card">
-      <h3>복합 유형 특징</h3>
-      <p>${t1.name}의 ${t1.strengths[0]}과 ${t2.name}의 ${t2.strengths[0]}을 함께 갖추고 있습니다.\n두 유형의 강점을 조합하면 실제 현장에서 폭넓게 활약할 수 있는 인재로 성장할 수 있습니다.</p>
+      ${typeSection(top1.type, '1순위 주요 유형')}
+      ${typeSection(top2.type, '2순위 보완 유형')}
+
+      <div class="report-card">
+        <h3>복합 유형 특징</h3>
+        <p>${t1.name}의 ${t1.strengths[0]}과 ${t2.name}의 ${t2.strengths[0]}을 함께 갖추고 있습니다.\n두 유형의 강점을 조합하면 실제 현장에서 폭넓게 활약할 수 있는 인재로 성장할 수 있습니다.</p>
+      </div>
     </div>
 
     <div class="save-notice">✅ 진단 결과가 저장되었습니다</div>
+    <button class="btn-save-img" id="btn-save-img" onclick="saveAsImage()">
+      <span>📥</span> 결과 이미지로 저장하기
+    </button>
     <button class="btn-restart" onclick="location.reload()">↺ 처음부터 다시 진단하기</button>`;
   } catch(err) {
     console.error("renderResult 오류:", err);
     document.getElementById("result-screen").innerHTML = `<div class="card"><p style="color:var(--accent3)">오류: ${err.message}</p></div>`;
+  }
+}
+
+async function saveAsImage() {
+  const btn = document.getElementById('btn-save-img');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> 저장 중...';
+
+  try {
+    const el = document.getElementById('capture-area');
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#0b0c10',
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+    });
+
+    const link = document.createElement('a');
+    link.download = `취업DNA_${userInfo.name}_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    btn.innerHTML = '<span>✅</span> 저장 완료!';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<span>📥</span> 결과 이미지로 저장하기';
+    }, 2000);
+  } catch(e) {
+    console.error('이미지 저장 실패', e);
+    btn.disabled = false;
+    btn.innerHTML = '<span>📥</span> 결과 이미지로 저장하기';
+    showToast('이미지 저장에 실패했습니다.', 'error');
   }
 }
 
