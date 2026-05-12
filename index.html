@@ -51,7 +51,7 @@
         radial-gradient(ellipse 50% 60% at 80% 80%, rgba(0,212,255,.07) 0%, transparent 60%);
       pointer-events: none;
     }
-    .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 48px 20px 100px; }
+    .wrap { position: relative; z-index: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 48px 20px 100px; box-sizing: border-box; }
 
     /* ── Header ── */
     header { text-align: center; margin-bottom: 56px; }
@@ -177,6 +177,12 @@
     /* ── Result ── */
     #result-screen { display: none; }
 
+    .strength-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;
+    }
+    @media (max-width: 500px) {
+      .strength-grid { grid-template-columns: 1fr; }
+    }
     .result-top {
       text-align: center; padding: 52px 24px;
       background: linear-gradient(135deg, rgba(0,245,160,.07), rgba(0,212,255,.05));
@@ -285,14 +291,86 @@
     .toast.success { border-color: rgba(0,245,160,.4); }
     .toast.error   { border-color: rgba(255,107,107,.4); }
 
+    /* ── 태블릿 (768px 이하) ── */
+    @media (max-width: 768px) {
+      .wrap { padding: 32px 16px 80px; }
+      header h1 { font-size: clamp(32px, 7vw, 52px); }
+      .report-card { padding: 22px 20px; }
+      .strength-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;
+    }
+    @media (max-width: 500px) {
+      .strength-grid { grid-template-columns: 1fr; }
+    }
+    .result-top { padding: 40px 20px; }
+    }
+
+    /* ── 모바일 (600px 이하) ── */
     @media (max-width: 600px) {
-      .card { padding: 24px 18px; }
+      .wrap { padding: 24px 14px 80px; }
+      header { margin-bottom: 36px; }
+      header h1 { font-size: clamp(28px, 8vw, 40px); }
+      header p { font-size: 13px; }
+
+      /* 스텝 */
+      .step-line { width: 24px; margin: 0 6px; }
+      .step-label { font-size: 11px; }
+
+      /* 카드 */
+      .card { padding: 20px 16px; }
       .two-col { grid-template-columns: 1fr; }
-      .likert { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .section-title { font-size: 17px; }
+
+      /* 문항 */
+      .likert { flex-direction: column; align-items: flex-start; gap: 10px; }
       .likert-label { max-width: 100%; }
-      .result-images { gap: 16px; }
-      .result-images > .result-img-wrap > div { width: 140px !important; height: 140px !important; }
-      .result-images > .result-img-wrap > div img { width: 140px !important; height: 140px !important; }
+      .likert-options { gap: 6px; }
+      .likert-btn { width: 38px; height: 38px; font-size: 13px; }
+      .q-text { font-size: 14px; }
+
+      /* 결과 */
+      .strength-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;
+    }
+    @media (max-width: 500px) {
+      .strength-grid { grid-template-columns: 1fr; }
+    }
+    .result-top { padding: 32px 14px; }
+      .result-images { gap: 12px; flex-wrap: nowrap; justify-content: center; }
+      .result-images .result-img-wrap > div {
+        width: 130px !important; height: 130px !important;
+      }
+      .result-images .result-img-wrap > div img {
+        width: 130px !important; height: 130px !important;
+      }
+      .result-type-name { font-size: clamp(22px, 7vw, 34px); }
+      .score-row { gap: 6px; }
+      .score-chip { font-size: 11px; padding: 5px 10px; }
+
+      /* 리포트 카드 */
+      .report-card { padding: 18px 14px; }
+      .report-card h3 { font-size: 10px; }
+      .report-card p { font-size: 14px; }
+      .tag { font-size: 12px; padding: 5px 11px; }
+      .tag-list { gap: 6px; }
+
+      /* 강점/보완 2열 → 1열 */
+      .report-card div[style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* 인물 블록 */
+      .person-block { flex-direction: column; gap: 10px; }
+      .person-icon { font-size: 28px; }
+      .person-name { font-size: 15px; }
+
+      /* 버튼 */
+      .btn { padding: 12px 20px; font-size: 13px; }
+      .btn-save-img { font-size: 14px; padding: 16px; }
+      .btn-restart { font-size: 13px; padding: 14px; }
+
+      /* 바이너리 선택 */
+      .choice-btn { font-size: 13px; padding: 13px 16px; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -710,7 +788,7 @@ function typeSection(type, label) {
         ${t.features.map(f=>`<span class="tag tag-blue">${f}</span>`).join('')}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+      <div class="strength-grid">
         <div>
           <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">강점</p>
           <div class="tag-list">${t.strengths.map(s=>`<span class="tag tag-green">${s}</span>`).join('')}</div>
@@ -791,16 +869,20 @@ async function saveAsImage() {
     const el = document.getElementById('capture-area');
     const scale = Math.max(window.devicePixelRatio || 1, 2) * 2;
 
-    // 이미지가 이미 base64로 캐시돼 있으므로 바로 캡처
+    // 고정 너비(800px)로 캡처해서 줄바꿈 일관성 보장
+    const FIXED_WIDTH = 800;
+    const ratio = FIXED_WIDTH / el.offsetWidth;
+    const captureHeight = el.offsetHeight * ratio;
+
     const dataUrl = await domtoimage.toPng(el, {
-      width:   el.offsetWidth  * scale,
-      height:  el.offsetHeight * scale,
+      width:   FIXED_WIDTH,
+      height:  captureHeight,
       quality: 1,
       bgcolor: '#0b0c10',
       style: {
-        transform:       `scale(${scale})`,
+        transform:       `scale(${ratio})`,
         transformOrigin: 'top left',
-        width:           el.offsetWidth  + 'px',
+        width:           el.offsetWidth + 'px',
         height:          el.offsetHeight + 'px',
       },
       filter: (node) => {
