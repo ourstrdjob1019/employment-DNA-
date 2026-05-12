@@ -660,13 +660,26 @@ async function submitDiagnosis() {
 function imgBlock(type, rank) {
   const url = TYPE_IMAGES[type];
   const real = url && !url.includes('URL을 여기에');
+  const boxStyle = [
+    'width:200px', 'height:200px', 'border-radius:16px',
+    'border:3px solid rgba(0,245,160,.35)',
+    'box-shadow:0 0 40px rgba(0,245,160,.15)',
+    'margin:0 auto 10px', 'flex-shrink:0', 'box-sizing:border-box',
+    'overflow:hidden',
+    ...(real ? [
+      `background-image:url("${url}")`,
+      'background-size:cover',
+      'background-position:center center',
+      'background-repeat:no-repeat',
+    ] : [
+      'background:linear-gradient(135deg,rgba(0,245,160,.15),rgba(0,212,255,.1))',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'font-size:68px',
+    ])
+  ].join(';');
   return `
     <div class="result-img-wrap">
-      ${real
-        ? `<div style="width:200px;height:200px;border-radius:16px;overflow:hidden;border:3px solid rgba(0,245,160,.35);box-shadow:0 0 40px rgba(0,245,160,.15);margin:0 auto 10px;flex-shrink:0;box-sizing:border-box;">
-             <img src="${url}" alt="${TYPE_DATA[type].name}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" />
-           </div>`
-        : `<div class="result-img-placeholder">${TYPE_DATA[type].emoji}</div>`}
+      <div style="${boxStyle}">${real ? '' : TYPE_DATA[type].emoji}</div>
       <div class="result-img-rank">${rank===1?'🥇 1순위':'🥈 2순위'} · ${TYPE_DATA[type].name}</div>
     </div>`;
 }
