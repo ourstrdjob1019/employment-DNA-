@@ -542,6 +542,32 @@ const TYPE_DATA = {
 const answers = {};
 const binary  = {};
 let   userInfo = {};
+const CACHED_IMAGES = {}; // base64 캐시
+
+/* ======================================================
+   이미지 미리 base64로 변환 (CORS 우회)
+====================================================== */
+async function preloadImages() {
+  const types = Object.keys(TYPE_IMAGES);
+  await Promise.all(types.map(async (type) => {
+    const url = TYPE_IMAGES[type];
+    if (!url || url.includes('URL을 여기에')) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      CACHED_IMAGES[type] = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch(e) {
+      // fetch 실패 시 원본 URL 그대로 사용
+      CACHED_IMAGES[type] = url;
+      console.warn('이미지 프리로드 실패:', type, e);
+    }
+  }));
+}
 
 /* ======================================================
    Build Q1~Q30
@@ -643,43 +669,31 @@ async function submitDiagnosis() {
 
   await saveToSupabase(scores, ranked, report);
 
-  setTimeout(() => {
-    // 먼저 result-screen을 보이게 한 후 innerHTML 렌더링
-    const rs = document.getElementById('result-screen');
-    rs.classList.remove('hidden');
-    rs.style.display = 'block';
-    renderResult(ranked[0], ranked[1], scores, ranked);
-    hide('loading-screen');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 1500);
+  // 이미지 base64 변환 후 렌더링
+  await preloadImages();
+
+  const rs = document.getElementById('result-screen');
+  rs.classList.remove('hidden');
+  rs.style.display = 'block';
+  renderResult(ranked[0], ranked[1], scores, ranked);
+  hide('loading-screen');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ======================================================
    Render Result
 ====================================================== */
 function imgBlock(type, rank) {
-  const url = TYPE_IMAGES[type];
-  const real = url && !url.includes('URL을 여기에');
-  const boxStyle = [
-    'width:200px', 'height:200px', 'border-radius:16px',
-    'border:3px solid rgba(0,245,160,.35)',
-    'box-shadow:0 0 40px rgba(0,245,160,.15)',
-    'margin:0 auto 10px', 'flex-shrink:0', 'box-sizing:border-box',
-    'overflow:hidden',
-    ...(real ? [
-      `background-image:url("${url}")`,
-      'background-size:cover',
-      'background-position:center center',
-      'background-repeat:no-repeat',
-    ] : [
-      'background:linear-gradient(135deg,rgba(0,245,160,.15),rgba(0,212,255,.1))',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'font-size:68px',
-    ])
-  ].join(';');
+  const b64 = CACHED_IMAGES[type];
+  const real = b64 && b64.startsWith('data:');
   return `
     <div class="result-img-wrap">
-      <div style="${boxStyle}">${real ? '' : TYPE_DATA[type].emoji}</div>
+      <div style="width:200px;height:200px;border-radius:16px;overflow:hidden;border:3px solid rgba(0,245,160,.35);box-shadow:0 0 40px rgba(0,245,160,.15);margin:0 auto 10px;flex-shrink:0;box-sizing:border-box;">
+        ${real
+          ? `<img src="${b64}" alt="${TYPE_DATA[type].name}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" />`
+          : `<div style="width:100%;height:100%;background:linear-gradient(135deg,rgba(0,245,160,.15),rgba(0,212,255,.1));display:flex;align-items:center;justify-content:center;font-size:68px;">${TYPE_DATA[type].emoji}</div>`
+        }
+      </div>
       <div class="result-img-rank">${rank===1?'🥇 1순위':'🥈 2순위'} · ${TYPE_DATA[type].name}</div>
     </div>`;
 }
@@ -777,10 +791,12 @@ async function saveAsImage() {
     const el = document.getElementById('capture-area');
     const scale = Math.max(window.devicePixelRatio || 1, 2) * 2;
 
+    // 이미지가 이미 base64로 캐시돼 있으므로 바로 캡처
     const dataUrl = await domtoimage.toPng(el, {
       width:   el.offsetWidth  * scale,
       height:  el.offsetHeight * scale,
       quality: 1,
+      bgcolor: '#0b0c10',
       style: {
         transform:       `scale(${scale})`,
         transformOrigin: 'top left',
@@ -788,7 +804,6 @@ async function saveAsImage() {
         height:          el.offsetHeight + 'px',
       },
       filter: (node) => {
-        // 버튼 제외하고 캡처
         if (node.id === 'btn-save-img') return false;
         if (node.classList && node.classList.contains('btn-restart')) return false;
         if (node.classList && node.classList.contains('save-notice')) return false;
