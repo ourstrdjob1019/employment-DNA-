@@ -625,7 +625,7 @@ const CACHED_IMAGES = {}; // base64 캐시
 /* ======================================================
    이미지 미리 base64로 변환 (CORS 우회)
 ====================================================== */
-// Image 객체 → canvas → base64 (모바일 CORS 우회)
+// Image 객체 → canvas → base64 (crossOrigin 명시)
 function imgToBase64(url) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -638,25 +638,17 @@ function imgToBase64(url) {
         canvas.getContext('2d').drawImage(img, 0, 0);
         resolve(canvas.toDataURL('image/png'));
       } catch(e) {
-        // canvas 오염 시 fetch 방식으로 fallback
-        fetchToBase64(url).then(resolve);
+        console.warn('canvas 오염:', e);
+        resolve(url);
       }
     };
-    img.onerror = () => fetchToBase64(url).then(resolve);
-    img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    img.onerror = (e) => {
+      console.warn('이미지 로드 실패:', e);
+      resolve(url);
+    };
+    // 캐시 무시하고 crossOrigin 헤더 포함해서 새로 요청
+    img.src = url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
   });
-}
-
-function fetchToBase64(url) {
-  return fetch(url)
-    .then(r => r.blob())
-    .then(blob => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    }))
-    .catch(() => url); // 최후 fallback
 }
 
 async function preloadImages() {
@@ -665,6 +657,7 @@ async function preloadImages() {
     const url = TYPE_IMAGES[type];
     if (!url || url.includes('URL을 여기에')) return;
     CACHED_IMAGES[type] = await imgToBase64(url);
+    console.log(type, '캐시 완료:', CACHED_IMAGES[type].substring(0, 30));
   }));
 }
 
@@ -894,11 +887,16 @@ async function saveAsImage() {
   try {
     const el = document.getElementById('capture-area');
 
-    // 1. clone 만들고 img src를 원본 URL로 교체
+    // 1. clone 만들고 img src를 base64 캐시로 교체
     const clone = el.cloneNode(true);
     clone.querySelectorAll('img').forEach(img => {
       const type = Object.keys(TYPE_DATA).find(k => TYPE_DATA[k].name === img.alt);
-      if (type && TYPE_IMAGES[type]) img.src = TYPE_IMAGES[type];
+      if (type && CACHED_IMAGES[type] && CACHED_IMAGES[type].startsWith('data:')) {
+        img.src = CACHED_IMAGES[type];
+      } else if (type && TYPE_IMAGES[type]) {
+        img.setAttribute('crossorigin', 'anonymous');
+        img.src = TYPE_IMAGES[type];
+      }
     });
 
     // 2. clone을 body에 잠깐 붙여서 dom-to-image 캡처
@@ -920,6 +918,7 @@ async function saveAsImage() {
       width:   clone.offsetWidth * scale,
       height:  clone.offsetHeight * scale,
       bgcolor: '#0b0c10',
+      copyDefaultStyles: false,
       style: {
         transform:       'scale(' + scale + ')',
         transformOrigin: 'top left',
