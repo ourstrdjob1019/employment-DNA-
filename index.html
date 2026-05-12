@@ -374,7 +374,6 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -877,7 +876,7 @@ function renderResult(top1, top2, scores, ranked) {
 
     <div class="save-notice">✅ 진단 결과가 저장되었습니다</div>
     <button class="btn-save-img" id="btn-save-img" onclick="saveAsImage()">
-      <span>📥</span> 결과 이미지로 저장하기
+      <span>📸</span> 결과 저장하기
     </button>
     <button class="btn-restart" onclick="location.reload()">↺ 처음부터 다시 진단하기</button>`;
   } catch(err) {
@@ -886,60 +885,50 @@ function renderResult(top1, top2, scores, ranked) {
   }
 }
 
-async function saveAsImage() {
-  const btn = document.getElementById('btn-save-img');
-  btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> 저장 중...';
+function saveAsImage() {
+  const el = document.getElementById('capture-area');
 
-  try {
-    const el = document.getElementById('capture-area');
-    const scale = Math.max(window.devicePixelRatio || 1, 2) * 2;
+  // capture-area 내용을 독립 HTML 페이지로 새 탭에 열기
+  const styles = Array.from(document.styleSheets)
+    .map(ss => {
+      try {
+        return Array.from(ss.cssRules).map(r => r.cssText).join('\n');
+      } catch(e) { return ''; }
+    }).join('\n');
 
-    // 고정 너비(800px)로 캡처해서 줄바꿈 일관성 보장
-    const FIXED_WIDTH = 800;
-    const ratio = FIXED_WIDTH / el.offsetWidth;
-    const captureHeight = el.offsetHeight * ratio;
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <title>취업 DNA 진단 결과</title>
+  <style>
+    ${styles}
+    body { background: #0b0c10; color: #e8eaf0; font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 24px; }
+    body::before { display: none; }
+    .capture-guide {
+      text-align: center; padding: 14px; margin-bottom: 20px;
+      background: rgba(0,245,160,.08); border: 1px solid rgba(0,245,160,.2);
+      border-radius: 12px; font-size: 14px; color: #00f5a0;
+    }
+    @media print { .capture-guide { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="capture-guide">
+    📸 이 화면을 스크린샷으로 저장하세요 &nbsp;|&nbsp;
+    PC: <strong>Ctrl+Shift+S</strong> &nbsp;|&nbsp;
+    iPhone: <strong>사이드버튼+볼륨위</strong> &nbsp;|&nbsp;
+    Android: <strong>전원+볼륨하</strong>
+  </div>
+  ${el.innerHTML}
+</body>
+</html>`;
 
-    const dataUrl = await domtoimage.toPng(el, {
-      width:   FIXED_WIDTH,
-      height:  captureHeight,
-      quality: 1,
-      bgcolor: '#0b0c10',
-      style: {
-        transform:       `scale(${ratio})`,
-        transformOrigin: 'top left',
-        width:           el.offsetWidth + 'px',
-        height:          el.offsetHeight + 'px',
-      },
-      filter: (node) => {
-        if (node.id === 'btn-save-img') return false;
-        if (node.classList && node.classList.contains('btn-restart')) return false;
-        if (node.classList && node.classList.contains('save-notice')) return false;
-        return true;
-      }
-    });
-
-    const dateStr = new Date().toLocaleDateString('ko-KR', {
-      year:'numeric', month:'2-digit', day:'2-digit'
-    }).replace(/\. /g,'-').replace('.','');
-
-    const link = document.createElement('a');
-    link.download = `취업DNA_${userInfo.name}_${dateStr}.png`;
-    link.href = dataUrl;
-    link.click();
-
-    btn.innerHTML = '<span>✅</span> 저장 완료!';
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.innerHTML = '<span>📥</span> 결과 이미지로 저장하기';
-    }, 2000);
-  } catch(e) {
-    console.error('이미지 저장 실패', e);
-    btn.disabled = false;
-    btn.innerHTML = '<span>📥</span> 결과 이미지로 저장하기';
-    showToast('이미지 저장 실패: ' + e.message, 'error');
-  }
-
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 
 
