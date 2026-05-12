@@ -374,6 +374,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -878,57 +879,140 @@ function renderResult(top1, top2, scores, ranked) {
   }
 }
 
-function saveAsImage() {
-  const el = document.getElementById('capture-area');
+async function saveAsImage() {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // clone 만들고 img src를 base64 캐시로 교체
-  const clone = el.cloneNode(true);
-  clone.querySelectorAll('img').forEach(img => {
-    const type = Object.keys(TYPE_DATA).find(k => TYPE_DATA[k].name === img.alt);
-    if (type && CACHED_IMAGES[type] && CACHED_IMAGES[type].startsWith('data:')) {
-      img.src = CACHED_IMAGES[type];
+  if (isMobile) {
+    // ── 모바일: 이미지 제외 텍스트만 오버레이로 표시 후 스크린샷
+    const el = document.getElementById('capture-area');
+    const clone = el.cloneNode(true);
+
+    // 이미지 박스 전체 숨기기
+    clone.querySelectorAll('.result-images').forEach(el => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.id = 'screenshot-overlay';
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:99999',
+      'background:#0b0c10','overflow-y:auto',
+      'padding:0','box-sizing:border-box',
+      'user-select:none','-webkit-user-select:none'
+    ].join(';');
+
+    const guide = document.createElement('div');
+    guide.style.cssText = [
+      'position:sticky','top:0','z-index:1',
+      'text-align:center','padding:12px 16px',
+      'background:rgba(11,12,16,.95)',
+      'border-bottom:1px solid rgba(0,245,160,.2)',
+      'font-size:13px','color:#00f5a0','line-height:1.8'
+    ].join(';');
+    guide.innerHTML = `
+      📸 스크린샷으로 저장하세요<br>
+      <span style="font-size:12px;color:#6b7280;">
+        iPhone: 사이드버튼+볼륨위 &nbsp;|&nbsp; Android: 전원+볼륨하
+      </span>
+      <button onclick="document.getElementById('screenshot-overlay').remove()"
+        style="display:block;margin:8px auto 0;padding:6px 20px;border-radius:8px;
+               border:1px solid rgba(0,245,160,.3);background:transparent;
+               color:#00f5a0;font-size:13px;cursor:pointer;">
+        ✕ 닫기
+      </button>`;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'padding:20px 16px 60px;max-width:800px;margin:0 auto;';
+    wrap.appendChild(clone);
+
+    overlay.appendChild(guide);
+    overlay.appendChild(wrap);
+    document.body.appendChild(overlay);
+
+  } else {
+    // ── PC: 이미지 포함 전체 dom-to-image 캡처
+    const btn = document.getElementById('btn-save-img');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> 변환 중...';
+
+    try {
+      const el = document.getElementById('capture-area');
+      const clone = el.cloneNode(true);
+
+      // base64 캐시 이미지 적용
+      clone.querySelectorAll('img').forEach(img => {
+        const type = Object.keys(TYPE_DATA).find(k => TYPE_DATA[k].name === img.alt);
+        if (type && CACHED_IMAGES[type] && CACHED_IMAGES[type].startsWith('data:')) {
+          img.src = CACHED_IMAGES[type];
+        }
+      });
+
+      clone.style.cssText = [
+        'position:fixed','top:0','left:0',
+        'width:' + el.offsetWidth + 'px',
+        'z-index:-9999','pointer-events:none',
+        'background:#0b0c10'
+      ].join(';');
+      document.body.appendChild(clone);
+
+      await Promise.all(Array.from(clone.querySelectorAll('img')).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+      ));
+
+      const scale = 2;
+      const dataUrl = await domtoimage.toPng(clone, {
+        width:   clone.offsetWidth * scale,
+        height:  clone.offsetHeight * scale,
+        bgcolor: '#0b0c10',
+        copyDefaultStyles: false,
+        filter: (node) => {
+          if (node.tagName === 'LINK') return false;
+          return true;
+        },
+        style: {
+          transform:       'scale(' + scale + ')',
+          transformOrigin: 'top left',
+          width:           clone.offsetWidth + 'px',
+          height:          clone.offsetHeight + 'px',
+        }
+      });
+
+      document.body.removeChild(clone);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'screenshot-overlay';
+      overlay.style.cssText = [
+        'position:fixed','inset:0','z-index:99999',
+        'background:rgba(0,0,0,.95)','overflow-y:auto',
+        'padding:20px 16px 60px','box-sizing:border-box',
+        'display:flex','flex-direction:column','align-items:center','gap:16px'
+      ].join(';');
+
+      overlay.innerHTML = `
+        <div style="text-align:center;padding:12px 16px;background:rgba(0,245,160,.08);
+                    border:1px solid rgba(0,245,160,.2);border-radius:12px;
+                    font-size:13px;color:#00f5a0;line-height:1.9;width:100%;box-sizing:border-box;">
+          📸 이미지를 <strong>우클릭 → 다른 이름으로 저장</strong>하세요
+        </div>
+        <img src="${dataUrl}"
+             style="width:100%;max-width:800px;border-radius:12px;display:block;"
+             alt="취업 DNA 진단 결과" />
+        <button onclick="document.getElementById('screenshot-overlay').remove()"
+          style="padding:12px 32px;border-radius:10px;border:1px solid rgba(0,245,160,.3);
+                 background:transparent;color:#00f5a0;font-size:14px;cursor:pointer;">
+          ✕ 닫기
+        </button>`;
+
+      document.body.appendChild(overlay);
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>📸</span> 결과 저장하기';
+
+    } catch(e) {
+      console.error('캡처 실패', e);
+      btn.disabled = false;
+      btn.innerHTML = '<span>📸</span> 결과 저장하기';
+      showToast('캡처 실패: ' + e.message, 'error');
     }
-  });
-
-  // 오버레이 생성
-  const overlay = document.createElement('div');
-  overlay.id = 'screenshot-overlay';
-  overlay.style.cssText = [
-    'position:fixed', 'inset:0', 'z-index:99999',
-    'background:#0b0c10', 'overflow-y:auto',
-    'padding:0', 'box-sizing:border-box',
-    'user-select:none', '-webkit-user-select:none'
-  ].join(';');
-
-  // 안내 바
-  const guide = document.createElement('div');
-  guide.style.cssText = [
-    'position:sticky', 'top:0', 'z-index:1',
-    'text-align:center', 'padding:12px 16px',
-    'background:rgba(11,12,16,.95)',
-    'border-bottom:1px solid rgba(0,245,160,.2)',
-    'font-size:13px', 'color:#00f5a0', 'line-height:1.8'
-  ].join(';');
-  guide.innerHTML = `
-    📸 스크린샷으로 저장하세요<br>
-    <span style="font-size:12px;color:#6b7280;">
-      iPhone: 사이드버튼+볼륨위 &nbsp;|&nbsp; Android: 전원+볼륨하 &nbsp;|&nbsp; PC: Ctrl+Shift+S
-    </span>
-    <button onclick="document.getElementById('screenshot-overlay').remove()"
-      style="display:block;margin:8px auto 0;padding:6px 20px;border-radius:8px;
-             border:1px solid rgba(0,245,160,.3);background:transparent;
-             color:#00f5a0;font-size:13px;cursor:pointer;">
-      ✕ 닫기
-    </button>`;
-
-  // 콘텐츠 래퍼
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'padding:20px 16px 60px;max-width:800px;margin:0 auto;';
-  wrap.appendChild(clone);
-
-  overlay.appendChild(guide);
-  overlay.appendChild(wrap);
-  document.body.appendChild(overlay);
+  }
 }
 
 
