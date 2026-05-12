@@ -914,11 +914,22 @@ async function saveAsImage() {
     ));
 
     const scale = 2;
+
+    // 구글 폰트 @import를 clone 안에 style로 직접 삽입 (외부 CSS CORS 우회)
+    const fontStyle = document.createElement('style');
+    fontStyle.textContent = "@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');";
+    clone.insertBefore(fontStyle, clone.firstChild);
+
     const dataUrl = await domtoimage.toPng(clone, {
       width:   clone.offsetWidth * scale,
       height:  clone.offsetHeight * scale,
       bgcolor: '#0b0c10',
       copyDefaultStyles: false,
+      filter: (node) => {
+        // 외부 링크 태그 제외 (구글 폰트 link 태그 등)
+        if (node.tagName === 'LINK' && node.href && node.href.includes('googleapis')) return false;
+        return true;
+      },
       style: {
         transform:       'scale(' + scale + ')',
         transformOrigin: 'top left',
