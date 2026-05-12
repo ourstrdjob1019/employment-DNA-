@@ -686,7 +686,7 @@ function buildQuestions() {
               <span style="font-size:10px;color:var(--muted);white-space:nowrap;">
                 ${v===1?'전혀 아님':v===5?'매우 그렇다':''}
               </span>
-              <button class="likert-btn" onclick="selectLikert(${q.id},${v},this)">${v}</button>
+              <button class="likert-btn" data-qid="${q.id}" onclick="selectLikert(${q.id},${v},this)">${v}</button>
             </div>
           `).join('')}
         </div>
@@ -696,7 +696,7 @@ function buildQuestions() {
 }
 
 function selectLikert(qId, val, btn) {
-  document.querySelectorAll(`#lk-${qId} .likert-btn`).forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll(`.likert-btn[data-qid="${qId}"]`).forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   answers[qId] = val;
   updateProgress();
