@@ -374,7 +374,6 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -870,7 +869,7 @@ function renderResult(top1, top2, scores, ranked) {
 
     <div class="save-notice">✅ 진단 결과가 저장되었습니다</div>
     <button class="btn-save-img" id="btn-save-img" onclick="saveAsImage()">
-      <span>📸</span> 결과 저장하기
+      <span>📄</span> PDF로 저장하기
     </button>
     <button class="btn-restart" onclick="location.reload()">↺ 처음부터 다시 진단하기</button>`;
   } catch(err) {
@@ -879,140 +878,65 @@ function renderResult(top1, top2, scores, ranked) {
   }
 }
 
-async function saveAsImage() {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+function saveAsImage() {
+  const el = document.getElementById('capture-area');
+  if (!el) { showToast('결과를 찾을 수 없습니다.', 'error'); return; }
 
-  if (isMobile) {
-    // ── 모바일: 이미지 제외 텍스트만 오버레이로 표시 후 스크린샷
-    const el = document.getElementById('capture-area');
-    const clone = el.cloneNode(true);
+  const clone = el.cloneNode(true);
 
-    // 이미지 박스 전체 숨기기
-    clone.querySelectorAll('.result-images').forEach(el => el.remove());
+  // script 태그 제거
+  clone.querySelectorAll('script').forEach(s => s.remove());
 
-    const overlay = document.createElement('div');
-    overlay.id = 'screenshot-overlay';
-    overlay.style.cssText = [
-      'position:fixed','inset:0','z-index:99999',
-      'background:#0b0c10','overflow-y:auto',
-      'padding:0','box-sizing:border-box',
-      'user-select:none','-webkit-user-select:none'
-    ].join(';');
-
-    const guide = document.createElement('div');
-    guide.style.cssText = [
-      'position:sticky','top:0','z-index:1',
-      'text-align:center','padding:12px 16px',
-      'background:rgba(11,12,16,.95)',
-      'border-bottom:1px solid rgba(0,245,160,.2)',
-      'font-size:13px','color:#00f5a0','line-height:1.8'
-    ].join(';');
-    guide.innerHTML = `
-      📸 스크린샷으로 저장하세요<br>
-      <span style="font-size:12px;color:#6b7280;">
-        iPhone: 사이드버튼+볼륨위 &nbsp;|&nbsp; Android: 전원+볼륨하
-      </span>
-      <button onclick="document.getElementById('screenshot-overlay').remove()"
-        style="display:block;margin:8px auto 0;padding:6px 20px;border-radius:8px;
-               border:1px solid rgba(0,245,160,.3);background:transparent;
-               color:#00f5a0;font-size:13px;cursor:pointer;">
-        ✕ 닫기
-      </button>`;
-
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'padding:20px 16px 60px;max-width:800px;margin:0 auto;';
-    wrap.appendChild(clone);
-
-    overlay.appendChild(guide);
-    overlay.appendChild(wrap);
-    document.body.appendChild(overlay);
-
-  } else {
-    // ── PC: 이미지 포함 전체 dom-to-image 캡처
-    const btn = document.getElementById('btn-save-img');
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> 변환 중...';
-
-    try {
-      const el = document.getElementById('capture-area');
-      const clone = el.cloneNode(true);
-
-      // base64 캐시 이미지 적용
-      clone.querySelectorAll('img').forEach(img => {
-        const type = Object.keys(TYPE_DATA).find(k => TYPE_DATA[k].name === img.alt);
-        if (type && CACHED_IMAGES[type] && CACHED_IMAGES[type].startsWith('data:')) {
-          img.src = CACHED_IMAGES[type];
-        }
-      });
-
-      clone.style.cssText = [
-        'position:fixed','top:0','left:0',
-        'width:' + el.offsetWidth + 'px',
-        'z-index:-9999','pointer-events:none',
-        'background:#0b0c10'
-      ].join(';');
-      document.body.appendChild(clone);
-
-      await Promise.all(Array.from(clone.querySelectorAll('img')).map(img =>
-        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
-      ));
-
-      const scale = 2;
-      const dataUrl = await domtoimage.toPng(clone, {
-        width:   clone.offsetWidth * scale,
-        height:  clone.offsetHeight * scale,
-        bgcolor: '#0b0c10',
-        copyDefaultStyles: false,
-        filter: (node) => {
-          if (node.tagName === 'LINK') return false;
-          return true;
-        },
-        style: {
-          transform:       'scale(' + scale + ')',
-          transformOrigin: 'top left',
-          width:           clone.offsetWidth + 'px',
-          height:          clone.offsetHeight + 'px',
-        }
-      });
-
-      document.body.removeChild(clone);
-
-      const overlay = document.createElement('div');
-      overlay.id = 'screenshot-overlay';
-      overlay.style.cssText = [
-        'position:fixed','inset:0','z-index:99999',
-        'background:rgba(0,0,0,.95)','overflow-y:auto',
-        'padding:20px 16px 60px','box-sizing:border-box',
-        'display:flex','flex-direction:column','align-items:center','gap:16px'
-      ].join(';');
-
-      overlay.innerHTML = `
-        <div style="text-align:center;padding:12px 16px;background:rgba(0,245,160,.08);
-                    border:1px solid rgba(0,245,160,.2);border-radius:12px;
-                    font-size:13px;color:#00f5a0;line-height:1.9;width:100%;box-sizing:border-box;">
-          📸 이미지를 <strong>우클릭 → 다른 이름으로 저장</strong>하세요
-        </div>
-        <img src="${dataUrl}"
-             style="width:100%;max-width:800px;border-radius:12px;display:block;"
-             alt="취업 DNA 진단 결과" />
-        <button onclick="document.getElementById('screenshot-overlay').remove()"
-          style="padding:12px 32px;border-radius:10px;border:1px solid rgba(0,245,160,.3);
-                 background:transparent;color:#00f5a0;font-size:14px;cursor:pointer;">
-          ✕ 닫기
-        </button>`;
-
-      document.body.appendChild(overlay);
-
-      btn.disabled = false;
-      btn.innerHTML = '<span>📸</span> 결과 저장하기';
-
-    } catch(e) {
-      console.error('캡처 실패', e);
-      btn.disabled = false;
-      btn.innerHTML = '<span>📸</span> 결과 저장하기';
-      showToast('캡처 실패: ' + e.message, 'error');
+  // base64 캐시 이미지 적용
+  clone.querySelectorAll('img').forEach(function(img) {
+    const type = Object.keys(TYPE_DATA).find(function(k) { return TYPE_DATA[k].name === img.alt; });
+    if (type && CACHED_IMAGES[type] && CACHED_IMAGES[type].startsWith('data:')) {
+      img.src = CACHED_IMAGES[type];
     }
-  }
+  });
+
+  // CSS 변수 인라인 변환
+  const computed = getComputedStyle(document.documentElement);
+  const cssVars = [
+    '--bg','--surface','--card','--border',
+    '--accent','--accent2','--accent3','--text','--muted','--radius'
+  ].map(function(v) { return v + ':' + computed.getPropertyValue(v); }).join(';');
+
+  // 인라인 CSS 수집
+  const inlineCSS = Array.from(document.styleSheets)
+    .filter(function(ss) { try { return ss.cssRules; } catch(e) { return false; } })
+    .flatMap(function(ss) { return Array.from(ss.cssRules).map(function(r) { return r.cssText; }); })
+    .join('\n');
+
+  const html = '<!DOCTYPE html>'
+    + '<html lang="ko"><head>'
+    + '<meta charset="UTF-8"/>'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1.0"/>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"/>'
+    + '<title>취업 DNA 진단 결과 - ' + userInfo.name + '</title>'
+    + '<style>'
+    + ':root {' + cssVars + '}'
+    + inlineCSS
+    + '* { box-sizing: border-box; }'
+    + 'body { background:#0b0c10 !important; color:#e8eaf0 !important;'
+    + '  font-family:"Noto Sans KR",sans-serif; margin:0; padding:24px;'
+    + '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }'
+    + 'body::before { display:none; }'
+    + '@media print { body { padding:0; } @page { margin:10mm; size:A4; } }'
+    + '</style>'
+    + '<script>window.onload = function() {'
+    + '  document.fonts.ready.then(function() {'
+    + '    setTimeout(function() { window.print(); }, 500);'
+    + '  });'
+    + '};<' + '/script>'
+    + '</head><body>'
+    + clone.outerHTML
+    + '</body></html>';
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) location.href = url;
 }
 
 
